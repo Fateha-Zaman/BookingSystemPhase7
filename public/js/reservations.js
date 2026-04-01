@@ -8,7 +8,7 @@ import {
 window.logout = logout;
 
 document.addEventListener("DOMContentLoaded", () => {
-  //initAuthUI();
+  initAuthUI();
 
   const allowed = requireAuthOrBlockPage();
   if (!allowed) return;
@@ -20,11 +20,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const reservationIdInput = document.getElementById("reservationId");
   const resourceIdInput = document.getElementById("resourceId");
   const userIdInput = document.getElementById("userId");
+  const userNameInput = document.getElementById("userName");
   const startTimeInput = document.getElementById("startTime");
   const endTimeInput = document.getElementById("endTime");
   const noteInput = document.getElementById("note");
   const statusInput = document.getElementById("status");
 
+  const saveBtn = document.getElementById("saveBtn");
   const updateBtn = document.getElementById("updateBtn");
   const deleteBtn = document.getElementById("deleteBtn");
   const clearBtn = document.getElementById("clearBtn");
@@ -33,8 +35,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form || !messageBox || !reservationList) return;
 
-  if (tokenPayload?.id) {
-    userIdInput.value = tokenPayload.id;
+  function setCreateMode() {
+    reservationIdInput.value = "";
+    saveBtn.classList.remove("hidden");
+    updateBtn.classList.add("hidden");
+    deleteBtn.classList.add("hidden");
+  }
+
+  function setEditMode() {
+    saveBtn.classList.add("hidden");
+    updateBtn.classList.remove("hidden");
+    deleteBtn.classList.remove("hidden");
   }
 
   function showMessage(type, text) {
@@ -103,21 +114,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function fillForm(item) {
     reservationIdInput.value = item.id ?? "";
-    resourceIdInput.value = item.resource_id ?? "";
-    userIdInput.value = item.user_id ?? "";
+    resourceIdInput.value = String(item.resource_id ?? "");
+    userIdInput.value = String(item.user_id ?? "");
     startTimeInput.value = toDateTimeLocal(item.start_time);
     endTimeInput.value = toDateTimeLocal(item.end_time);
     noteInput.value = item.note ?? "";
     statusInput.value = item.status ?? "active";
+    setEditMode();
+    clearMessage();
   }
 
   function resetForm() {
     form.reset();
-    reservationIdInput.value = "";
+
     if (tokenPayload?.id) {
       userIdInput.value = tokenPayload.id;
     }
+
+    if (userNameInput) {
+      userNameInput.value =
+        tokenPayload?.email ||
+        tokenPayload?.firstName ||
+        tokenPayload?.role ||
+        "Authenticated user";
+    }
+
     statusInput.value = "active";
+    setCreateMode();
   }
 
   function renderReservationList(items) {
@@ -135,21 +158,57 @@ document.addEventListener("DOMContentLoaded", () => {
     items.forEach((item) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-left hover:bg-black/5 transition-all duration-200 ease-out";
+      button.className =
+        "w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-left hover:bg-black/5 transition-all duration-200 ease-out";
       button.innerHTML = `
         <div class="text-sm font-semibold text-brand-dark">
-          #${item.id} • ${item.resource_name || `Resource ${item.resource_id}`} • User ${item.user_id}
+          #${item.id} • ${item.resource_name || `Resource ${item.resource_id}`}
         </div>
         <div class="mt-1 text-xs text-black/60">
-          ${formatReservationDate(item.start_time)} - ${formatReservationDate(item.end_time)}
+          ${formatReservationDate(item.start_time)} – ${formatReservationDate(item.end_time)}
         </div>
         <div class="mt-2 text-xs text-black/70">
-          Status: ${item.status}
+          User ${item.user_id} • Status: ${item.status}
         </div>
       `;
-      button.addEventListener("click", () => fillForm(item));
+
+      button.addEventListener("click", () => {
+        fillForm(item);
+      });
+
       reservationList.appendChild(button);
     });
+  }
+
+  async function loadResources() {
+    try {
+      const response = await fetch("/api/resources");
+      const body = await response.json();
+
+      if (!response.ok) {
+        showMessage("error", body?.error || "Failed to load resources.");
+        return;
+      }
+
+      const items = body.data || body || [];
+      const currentValue = resourceIdInput.value;
+
+      resourceIdInput.innerHTML = `<option value="">Select a resource</option>`;
+
+      items.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = `${item.name} (ID ${item.id})`;
+        resourceIdInput.appendChild(option);
+      });
+
+      if (currentValue) {
+        resourceIdInput.value = currentValue;
+      }
+    } catch (error) {
+      console.error("Load resources failed:", error);
+      showMessage("error", "Unable to load resources.");
+    }
   }
 
   async function loadReservations() {
@@ -164,9 +223,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       renderReservationList(body.data || []);
     } catch (error) {
-      console.error(error);
+      console.error("Load reservations failed:", error);
       showMessage("error", "Unable to load reservations.");
     }
+  }
+
+  if (tokenPayload?.id) {
+    userIdInput.value = tokenPayload.id;
+  }
+
+  if (userNameInput) {
+    userNameInput.value =
+      tokenPayload?.email ||
+      tokenPayload?.firstName ||
+      tokenPayload?.role ||
+      "Authenticated user";
   }
 
   form.addEventListener("submit", async (event) => {
@@ -196,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showMessage("success", "Reservation created successfully.");
       await loadReservations();
     } catch (error) {
-      console.error(error);
+      console.error("Create reservation failed:", error);
       showMessage("error", "Unable to create reservation.");
     }
   });
@@ -232,7 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showMessage("success", "Reservation updated successfully.");
       await loadReservations();
     } catch (error) {
-      console.error(error);
+      console.error("Update reservation failed:", error);
       showMessage("error", "Unable to update reservation.");
     }
   });
@@ -255,7 +326,9 @@ document.addEventListener("DOMContentLoaded", () => {
         let body = {};
         try {
           body = await response.json();
-        } catch {}
+        } catch {
+          body = {};
+        }
         showMessage("error", body?.error || "Failed to delete reservation.");
         return;
       }
@@ -264,7 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showMessage("success", "Reservation deleted successfully.");
       await loadReservations();
     } catch (error) {
-      console.error(error);
+      console.error("Delete reservation failed:", error);
       showMessage("error", "Unable to delete reservation.");
     }
   });
@@ -274,5 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
     clearMessage();
   });
 
+  resetForm();
+  loadResources();
   loadReservations();
 });

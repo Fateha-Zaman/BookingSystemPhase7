@@ -107,7 +107,7 @@
                     <div class="rounded-3xl bg-white p-8 shadow-soft">
                         <h2 class="text-xl font-semibold">Reservation form</h2>
                         <p class="mt-1 text-sm text-black/60">
-                            All fields marked with * are required.
+                            Choose a resource, set the time, and save the reservation.
                         </p>
 
                         <div id="message" class="hidden mt-6 rounded-2xl border px-4 py-3 text-sm" role="alert"></div>
@@ -118,18 +118,21 @@
                             <div class="grid gap-6 md:grid-cols-2">
                                 <div>
                                     <label for="resourceId" class="block text-sm font-semibold">
-                                        Resource ID *
+                                        Resource *
                                     </label>
-                                    <input id="resourceId" type="number" required
-                                        class="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30 transition-all duration-200 ease-out" />
+                                    <select id="resourceId" required
+                                        class="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30 transition-all duration-200 ease-out">
+                                        <option value="">Select a resource</option>
+                                    </select>
                                 </div>
 
                                 <div>
-                                    <label for="userId" class="block text-sm font-semibold">
-                                        User ID *
+                                    <label for="userName" class="block text-sm font-semibold">
+                                        User
                                     </label>
-                                    <input id="userId" type="number" required
-                                        class="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30 transition-all duration-200 ease-out" />
+                                    <input id="userName" type="text" readonly
+                                        class="mt-2 w-full rounded-2xl border border-black/10 bg-black/5 px-4 py-3 text-sm outline-none" />
+                                    <input id="userId" type="hidden" />
                                 </div>
                             </div>
 
@@ -172,18 +175,18 @@
                             </div>
 
                             <div class="grid gap-4 sm:grid-cols-3">
-                                <button type="submit"
+                                <button type="submit" id="saveBtn"
                                     class="rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark/80 transition-all duration-200 ease-out">
                                     Save reservation
                                 </button>
 
                                 <button type="button" id="updateBtn"
-                                    class="rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark/80 transition-all duration-200 ease-out">
+                                    class="rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark/80 transition-all duration-200 ease-out hidden">
                                     Update
                                 </button>
 
                                 <button type="button" id="deleteBtn"
-                                    class="rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark/80 transition-all duration-200 ease-out">
+                                    class="rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark/80 transition-all duration-200 ease-out hidden">
                                     Delete
                                 </button>
                             </div>
@@ -212,10 +215,10 @@
                     <div class="rounded-3xl bg-white p-6 shadow-soft">
                         <h3 class="font-semibold">Reservation tips</h3>
                         <ul class="mt-4 space-y-2 text-sm text-black/70">
-                            <li>• Use valid existing resource and user IDs</li>
+                            <li>• Select a resource from the list</li>
                             <li>• End time must be after start time</li>
-                            <li>• Keep note short and practical</li>
-                            <li>• Update status when reservation lifecycle changes</li>
+                            <li>• Save for new reservations only</li>
+                            <li>• Update/Delete for selected reservations</li>
                         </ul>
                         <a href="/"
                             class="mt-5 inline-block w-full rounded-2xl bg-brand-primary px-4 py-3 text-center text-sm text-white hover:bg-brand-dark/80 transition-all duration-200 ease-out">
